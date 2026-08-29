@@ -1,0 +1,70 @@
+# Paper-aligned Module 3. The annotation export does not publish the coded
+# lesion subtype mapping; conversion currently makes the t3=bucket-handle
+# assumption explicit in its report and CLI.
+module: module3_bucket_video_swin
+seed: 42
+device: cuda
+
+data:
+  train_rois: rois/paper_reproduction/train/index.jsonl
+  val_rois: rois/paper_reproduction/val/index.jsonl
+  roi_shape: [32, 224, 224]
+  classes: [no_bucket_handle, bucket_handle]
+  sides: [medial, lateral]
+  # Module 3 is conditional on Module 2 predicting tear in Figure S1; train
+  # and validate it only within ground-truth tear menisci.
+  tear_only: true
+  num_workers: 8
+  persistent_workers: true
+  prefetch_factor: 2
+  oversampling: true
+  # Keep positives visible without changing the training prior to 50/50.
+  positive_sampling_fraction: 0.25
+  train_augmentation: true
+  train_augmentation_params:
+    probability: 0.5
+    max_rotation_degrees: 30.0
+    max_brightness_shift: 0.2
+    noise_sigma: 0.02
+
+model:
+  implementation: paper_swin_t
+  num_classes: 1
+  pretrained: true
+  pretrained_checkpoint: pretrained/swin3d_t-7615ae03.pth
+  normalize_input: true
+  # Process orthogonal planes independently with one shared pretrained backbone,
+  # then concatenate features. This matches the manuscript prose and avoids
+  # treating sagittal/coronal pixels as aligned RGB channels.
+  fusion_mode: shared_feature_concat
+  dropout: 0.1
+
+loss:
+  type: binary_focal
+  focal_alpha: 0.5
+  focal_gamma: 2.0
+
+train:
+  epochs: 25
+  batch_size: 4
+  grad_accum_steps: 4
+  amp: true
+  optimizer: AdamW
+  lr: 0.0001
+  weight_decay: 0.05
+  betas: [0.9, 0.999]
+  scheduler: cosine
+  warmup_epochs: 2
+  output_dir: checkpoints/paper_reproduction/module3_f1
+  resume: null
+  save_best_metric: overall_f1
+  log_interval: 10
+
+validate:
+  batch_size: 8
+  threshold: 0.5
+  threshold_selection:
+    enabled: true
+    minimum: 0.05
+    maximum: 0.95
+  bootstrap_samples: 1000

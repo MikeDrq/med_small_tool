@@ -1,0 +1,28 @@
+{
+  "dicom_roots": [
+    "../data/dicom/10299",
+    "../data/json/10299"
+  ],
+  "annotation_root": "../data/json/10299",
+  "output_jsonl": "data/paper_reproduction/index_all.jsonl",
+  "studies_scanned": 1738,
+  "records_written": 1736,
+  "annotations_skipped": 3,
+  "bucket_handle_code": "t3",
+  "scan_workers": 16,
+  "referenced_series_uids": 7722,
+  "skipped": [
+    {
+      "annotation": "../data/json/10299/1.2.840.113619.186.20031102220149212.20170206180834644.448.json",
+      "reason": "missing sagittal or coronal series"
+    },
+    {
+      "annotation": "../data/json/10299/1.2.840.113619.186.20031102220149212.20170811151848865.989.json",
+      "reason": "missing sagittal or coronal series"
+    },
+    {
+      "annotation": "../data/json/10299/1.2.840.113619.186.20031102220149212.20190712143913841.666.json",
+      "reason": "invalid json: Expecting value: line 1 column 1 (char 0)"
+    }
+  ]
+}

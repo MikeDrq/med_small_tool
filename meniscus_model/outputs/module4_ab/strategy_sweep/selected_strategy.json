@@ -1,0 +1,28 @@
+{
+  "selection_split": "validation",
+  "selection_box_source": "pred",
+  "selection_metric": "roc_auc",
+  "strategy": "q25_beta",
+  "plateau_fraction": 0.9,
+  "metrics": {
+    "box_source": "pred",
+    "strategy": "q25_beta",
+    "plateau_fraction": 0.9,
+    "total_cases": 788,
+    "evaluated_cases": 787,
+    "skipped_cases": 1,
+    "coverage": 0.998730964467005,
+    "n": 787,
+    "accuracy": 0.843710292249047,
+    "precision": 0.6923076923076923,
+    "recall": 0.0703125,
+    "specificity": 0.9939301972685888,
+    "f1": 0.12765957446808512,
+    "roc_auc": 0.9328883725341427,
+    "pr_auc": 0.7001123677564016,
+    "tp": 9,
+    "fp": 4,
+    "tn": 655,
+    "fn": 119
+  }
+}

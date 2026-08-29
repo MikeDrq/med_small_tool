@@ -1,0 +1,176 @@
+{
+  "diagnostic": "postprocess_sweep",
+  "seed": 42,
+  "max_cases": null,
+  "index_jsonl_override": null,
+  "score_thresholds": [
+    0.01,
+    0.03,
+    0.05,
+    0.1,
+    0.2,
+    0.3
+  ],
+  "topk_per_image": [
+    null
+  ],
+  "nms_thresholds": [
+    0.3
+  ],
+  "experiments": [
+    {
+      "name": "paper_reproduction",
+      "config": "configs/module1_meniscovit_cop.yaml",
+      "checkpoint": "checkpoints/paper_reproduction/module1/best.pt",
+      "index_jsonl": "data/paper_reproduction/val.jsonl",
+      "slice_selection": {
+        "mode": "uniform",
+        "unmatched_label_policy": "drop"
+      },
+      "final_score_mode": "objectness_quality",
+      "quality_score_alpha": 1.0,
+      "quality_score_beta": 1.0,
+      "source_config": {
+        "module": "module1_meniscovit_cop",
+        "seed": 42,
+        "device": "cuda",
+        "data": {
+          "train_index": "data/paper_reproduction/train.jsonl",
+          "val_index": "data/paper_reproduction/val.jsonl",
+          "output_size": 512,
+          "num_slices": 32,
+          "patch_size": 4,
+          "num_workers": 8,
+          "persistent_workers": true,
+          "prefetch_factor": 2,
+          "train_augmentation": true,
+          "train_augmentation_mode": "spatial_photometric",
+          "train_augmentation_params": {
+            "probability": 0.5,
+            "max_rotation_degrees": 30.0,
+            "max_brightness_shift": 0.2,
+            "noise_sigma": 0.02
+          },
+          "train_slice_selection": {
+            "mode": "label_chunks",
+            "unmatched_label_policy": "drop"
+          },
+          "val_slice_selection": {
+            "mode": "uniform",
+            "unmatched_label_policy": "drop"
+          }
+        },
+        "model": {
+          "architecture": "paper_hierarchical",
+          "pretrained_checkpoint": "pretrained/uniformer_small_k400_16x8.pth",
+          "pretrained_sha256": "d5fd7b0c49ee6a5422ef5d0c884d962c742003bfbd900747485eb99fa269d0db",
+          "pretrained_strict": true,
+          "normalize_input": true,
+          "input_mean": [
+            0.45,
+            0.45,
+            0.45
+          ],
+          "input_std": [
+            0.225,
+            0.225,
+            0.225
+          ],
+          "image_size": 512,
+          "num_slices": 32,
+          "in_channels": 3,
+          "embed_dims": [
+            64,
+            128,
+            320,
+            512
+          ],
+          "depths": [
+            3,
+            4,
+            8,
+            3
+          ],
+          "head_dim": 64,
+          "mlp_ratio": 4.0,
+          "cross_attention_k": 32,
+          "cross_attention_max_tokens": 4096,
+          "dropout": 0.0,
+          "attn_dropout": 0.0,
+          "drop_path_rate": 0.1,
+          "factorized_global_attention": true,
+          "output_original_depth": true,
+          "use_checkpoint": true,
+          "head_hidden_dim": 512,
+          "bbox_param": "ltrb_from_token_center",
+          "use_bbox_quality_head": true
+        },
+        "loss": {
+          "objectness_weight": 1.0,
+          "bbox_weight": 2.0,
+          "side_weight": 0.5,
+          "abnormality_weight": 1.0,
+          "bbox_loss_type": "smooth_l1_giou",
+          "objectness_loss_type": "focal",
+          "objectness_normalization": "positive_count",
+          "objectness_target_mode": "assigned",
+          "objectness_prior_prob": 0.01,
+          "focal_alpha": 0.25,
+          "focal_gamma": 2.0,
+          "positive_radius_tokens": 0,
+          "bbox_quality_loss_weight": 1.0,
+          "bbox_quality_loss_type": "quality_focal",
+          "bbox_quality_target_mode": "iou",
+          "bbox_quality_train_mask": "sampled_soft_iou",
+          "bbox_quality_start_epoch": 2,
+          "quality_sample_total": 1024,
+          "quality_high_iou_fraction": 0.25,
+          "quality_mid_iou_fraction": 0.25,
+          "quality_low_iou_fraction": 0.5,
+          "quality_pos_iou_threshold": 0.3,
+          "quality_neg_iou_threshold": 0.1
+        },
+        "train": {
+          "epochs": 15,
+          "batch_size": 2,
+          "grad_accum_steps": 4,
+          "amp": true,
+          "optimizer": "AdamW",
+          "lr": 0.0001,
+          "weight_decay": 0.005,
+          "betas": [
+            0.9,
+            0.999
+          ],
+          "scheduler": "cosine",
+          "warmup_epochs": 2,
+          "output_dir": "checkpoints/paper_reproduction/module1",
+          "resume": null,
+          "save_best_metric": "iou_detection_f1",
+          "log_interval": 10
+        },
+        "validate": {
+          "batch_size": 1,
+          "score_threshold": 0.05,
+          "final_score_mode": "objectness_quality",
+          "quality_score_alpha": 1.0,
+          "quality_score_beta": 1.0,
+          "nms_threshold": 0.3,
+          "topk_per_image": null,
+          "iou_threshold": 0.45,
+          "iou_thresholds": [
+            0.1,
+            0.3,
+            0.45
+          ],
+          "side_threshold": 0.5,
+          "abnormality_threshold": 0.4,
+          "bootstrap_samples": 1000,
+          "log_detection_diagnostics": false,
+          "compute_extended_diagnostics_during_training": false,
+          "progress_interval": 50
+        }
+      }
+    }
+  ]
+}

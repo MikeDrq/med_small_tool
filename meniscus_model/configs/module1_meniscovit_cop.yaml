@@ -1,0 +1,136 @@
+# Paper-aligned Module 1 reproduction profile.
+# Exact values published by the manuscript: 512x512 input, UniFormer-S stage
+# dimensions/depths, k=32 cross-plane neighbors, AdamW 1e-4/0.005, 15 epochs,
+# two warmup epochs, and effective batch size 8.  The fixed T=32 input and
+# anchor-free/quality heads remain necessary engineering choices because the
+# paper does not disclose them.
+module: module1_meniscovit_cop
+seed: 42
+device: cuda
+
+data:
+  train_index: data/paper_reproduction/train.jsonl
+  val_index: data/paper_reproduction/val.jsonl
+  output_size: 512
+  num_slices: 32
+  # RCPE coordinates are emitted for the first 4x4x2 patch embedding.
+  patch_size: 4
+  num_workers: 8
+  persistent_workers: true
+  prefetch_factor: 2
+  train_augmentation: true
+  # Spatial transforms update boxes and DICOM world-coordinate grids together.
+  train_augmentation_mode: spatial_photometric
+  train_augmentation_params:
+    probability: 0.5
+    max_rotation_degrees: 30.0
+    max_brightness_shift: 0.2
+    noise_sigma: 0.02
+  train_slice_selection:
+    mode: label_chunks
+    unmatched_label_policy: drop
+  val_slice_selection:
+    mode: uniform
+    unmatched_label_policy: drop
+
+model:
+  architecture: paper_hierarchical
+  # Official UniFormer-S Kinetics-400 initialization for both intra-plane
+  # branches; co-plane/RCPE/detection layers remain task-random.
+  pretrained_checkpoint: pretrained/uniformer_small_k400_16x8.pth
+  pretrained_sha256: d5fd7b0c49ee6a5422ef5d0c884d962c742003bfbd900747485eb99fa269d0db
+  pretrained_strict: true
+  # Official Kinetics preprocessing after paper windowing/augmentation.
+  normalize_input: true
+  input_mean: [0.45, 0.45, 0.45]
+  input_std: [0.225, 0.225, 0.225]
+  image_size: 512
+  num_slices: 32
+  in_channels: 3
+  embed_dims: [64, 128, 320, 512]
+  depths: [3, 4, 8, 3]
+  head_dim: 64
+  mlp_ratio: 4.0
+  cross_attention_k: 32
+  # Cross-attention is evaluated at an adaptive world-coordinate grid and the
+  # residual is interpolated back; this bounds the O(N^2) distance matrix.
+  cross_attention_max_tokens: 4096
+  dropout: 0.0
+  attn_dropout: 0.0
+  drop_path_rate: 0.1
+  factorized_global_attention: true
+  output_original_depth: true
+  use_checkpoint: true
+  head_hidden_dim: 512
+  bbox_param: ltrb_from_token_center
+  # Separating presence from localization quality fixes the old near-zero
+  # score/IoU correlation while retaining the manuscript's detection tasks.
+  use_bbox_quality_head: true
+
+loss:
+  objectness_weight: 1.0
+  bbox_weight: 2.0
+  side_weight: 0.5
+  abnormality_weight: 1.0
+  bbox_loss_type: smooth_l1_giou
+  objectness_loss_type: focal
+  # RetinaNet/FCOS-style normalization; averaging over all 32k dense tokens
+  # suppresses the positive objectness gradient by roughly 250x on this data.
+  objectness_normalization: positive_count
+  objectness_target_mode: assigned
+  objectness_prior_prob: 0.01
+  focal_alpha: 0.25
+  focal_gamma: 2.0
+  positive_radius_tokens: 0
+  bbox_quality_loss_weight: 1.0
+  bbox_quality_loss_type: quality_focal
+  bbox_quality_target_mode: iou
+  bbox_quality_train_mask: sampled_soft_iou
+  bbox_quality_start_epoch: 2
+  quality_sample_total: 1024
+  quality_high_iou_fraction: 0.25
+  quality_mid_iou_fraction: 0.25
+  quality_low_iou_fraction: 0.50
+  quality_pos_iou_threshold: 0.3
+  quality_neg_iou_threshold: 0.1
+
+train:
+  epochs: 15
+  # H100-safe physical batch; accumulation reproduces paper batch size 8.
+  batch_size: 2
+  grad_accum_steps: 4
+  amp: true
+  optimizer: AdamW
+  lr: 0.0001
+  weight_decay: 0.005
+  betas: [0.9, 0.999]
+  scheduler: cosine
+  warmup_epochs: 2
+  output_dir: checkpoints/paper_reproduction/module1
+  resume: null
+  save_best_metric: iou_detection_f1
+  log_interval: 10
+
+validate:
+  batch_size: 1
+  # The supplement uses 0.2 for meniscus localization; the validation sweep
+  # also maximizes F1 at 0.2 under the paper's IoU>0.45 TP criterion.
+  score_threshold: 0.2
+  final_score_mode: objectness_quality
+  quality_score_alpha: 1.0
+  quality_score_beta: 1.0
+  nms_threshold: 0.3
+  topk_per_image: null
+  iou_threshold: 0.45
+  iou_thresholds: [0.1, 0.3, 0.45]
+  # Figure S1 operating points for the two Module 1 classification heads.
+  side_threshold: 0.5
+  abnormality_threshold: 0.4
+  bootstrap_samples: 1000
+  log_detection_diagnostics: false
+  # Oracle/ranking probes are debug-only and are not manuscript metrics.
+  compute_extended_diagnostics: false
+  # Keep checkpoint-selection metrics every epoch; run oracle/top-k/four-mode
+  # analysis only through scripts/module1_debug when explicitly requested.
+  compute_extended_diagnostics_during_training: false
+  progress_interval: 50

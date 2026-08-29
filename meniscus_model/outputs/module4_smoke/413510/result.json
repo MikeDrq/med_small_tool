@@ -1,0 +1,244 @@
+{
+  "case_id": "413510",
+  "menisci": {
+    "medial": {
+      "detected": false,
+      "status": "normal",
+      "bucket_handle": false,
+      "boxes": [
+        {
+          "plane": "sagittal",
+          "slice_index": 0,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "sagittal",
+          "slice_index": 1,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "sagittal",
+          "slice_index": 2,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "sagittal",
+          "slice_index": 3,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "coronal",
+          "slice_index": 0,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "coronal",
+          "slice_index": 1,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "coronal",
+          "slice_index": 2,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "coronal",
+          "slice_index": 3,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        }
+      ],
+      "confidence": {
+        "abnormality": 0.0,
+        "status": 0.0,
+        "status_probabilities": {
+          "normal": 0.0,
+          "degeneration": 0.0,
+          "tear": 0.0
+        },
+        "bucket_handle": 0.0
+      }
+    },
+    "lateral": {
+      "detected": false,
+      "status": "normal",
+      "bucket_handle": false,
+      "discoid": false,
+      "discoid_available": true,
+      "discoid_beta": null,
+      "tibia_width": 64.6875,
+      "tibia_width_source": "coronal_u2net_class2",
+      "tibia_width_slice_index": 2,
+      "meniscus_width": null,
+      "boxes": [
+        {
+          "plane": "sagittal",
+          "slice_index": 0,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "sagittal",
+          "slice_index": 1,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "sagittal",
+          "slice_index": 2,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "sagittal",
+          "slice_index": 3,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "coronal",
+          "slice_index": 0,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "coronal",
+          "slice_index": 1,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "coronal",
+          "slice_index": 2,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        },
+        {
+          "plane": "coronal",
+          "slice_index": 3,
+          "bbox": [
+            0.25,
+            0.25,
+            0.75,
+            0.75
+          ],
+          "score": 0.0,
+          "source": "fallback_center"
+        }
+      ],
+      "confidence": {
+        "abnormality": 0.0,
+        "status": 0.0,
+        "status_probabilities": {
+          "normal": 0.0,
+          "degeneration": 0.0,
+          "tear": 0.0
+        },
+        "bucket_handle": 0.0,
+        "discoid": 0.0
+      }
+    }
+  },
+  "visualizations": {
+    "bbox_images": [],
+    "attention_heatmaps": [],
+    "roi_images": []
+  }
+}

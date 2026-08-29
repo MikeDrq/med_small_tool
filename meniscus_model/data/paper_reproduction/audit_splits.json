@@ -1,0 +1,249 @@
+{
+  "splits": {
+    "train": {
+      "records": 1215,
+      "unique_case_ids": 1215,
+      "unique_study_uids": 1215,
+      "unique_patient_groups": 1131,
+      "repeated_patient_groups": 74,
+      "records_in_repeated_patient_groups": 158,
+      "missing_patient_group_ids": 0,
+      "module1_box_counts": {
+        "coronal:lateral:abnormal": 3794,
+        "coronal:lateral:normal": 6968,
+        "coronal:medial:abnormal": 4064,
+        "coronal:medial:normal": 9160,
+        "sagittal:lateral:abnormal": 4087,
+        "sagittal:lateral:normal": 11122,
+        "sagittal:medial:abnormal": 4151,
+        "sagittal:medial:normal": 12496
+      },
+      "module2_case_counts": {
+        "lateral:degeneration": 68,
+        "lateral:normal": 560,
+        "lateral:tear": 587,
+        "medial:degeneration": 103,
+        "medial:normal": 558,
+        "medial:tear": 554
+      },
+      "module3_case_counts": {
+        "lateral:0": 1178,
+        "lateral:1": 37,
+        "medial:0": 1165,
+        "medial:1": 50
+      },
+      "module4_case_counts": {
+        "lateral_discoid:0": 1070,
+        "lateral_discoid:1": 145
+      },
+      "lesion_boxes": 16211,
+      "unmatched_lesion_boxes": 1,
+      "invalid_boxes": 0,
+      "logical_inconsistencies": {},
+      "series_depth": {
+        "sagittal": {
+          "min": 14,
+          "median": 21,
+          "max": 27,
+          "over_32": 0
+        },
+        "coronal": {
+          "min": 15,
+          "median": 20,
+          "max": 25,
+          "over_32": 0
+        }
+      },
+      "distinct_labeled_slice_count": {
+        "sagittal": {
+          "min": 7,
+          "median": 16,
+          "max": 23,
+          "over_32": 0
+        },
+        "coronal": {
+          "min": 1,
+          "median": 11,
+          "max": 15,
+          "over_32": 0
+        }
+      }
+    },
+    "val": {
+      "records": 260,
+      "unique_case_ids": 260,
+      "unique_study_uids": 260,
+      "unique_patient_groups": 242,
+      "repeated_patient_groups": 16,
+      "records_in_repeated_patient_groups": 34,
+      "missing_patient_group_ids": 0,
+      "module1_box_counts": {
+        "coronal:lateral:abnormal": 769,
+        "coronal:lateral:normal": 1529,
+        "coronal:medial:abnormal": 873,
+        "coronal:medial:normal": 1980,
+        "sagittal:lateral:abnormal": 803,
+        "sagittal:lateral:normal": 2387,
+        "sagittal:medial:abnormal": 849,
+        "sagittal:medial:normal": 2705
+      },
+      "module2_case_counts": {
+        "lateral:degeneration": 12,
+        "lateral:normal": 123,
+        "lateral:tear": 125,
+        "medial:degeneration": 22,
+        "medial:normal": 118,
+        "medial:tear": 120
+      },
+      "module3_case_counts": {
+        "lateral:0": 250,
+        "lateral:1": 10,
+        "medial:0": 247,
+        "medial:1": 13
+      },
+      "module4_case_counts": {
+        "lateral_discoid:0": 229,
+        "lateral_discoid:1": 31
+      },
+      "lesion_boxes": 3306,
+      "unmatched_lesion_boxes": 0,
+      "invalid_boxes": 0,
+      "logical_inconsistencies": {},
+      "series_depth": {
+        "sagittal": {
+          "min": 15,
+          "median": 21,
+          "max": 26,
+          "over_32": 0
+        },
+        "coronal": {
+          "min": 17,
+          "median": 20,
+          "max": 28,
+          "over_32": 0
+        }
+      },
+      "distinct_labeled_slice_count": {
+        "sagittal": {
+          "min": 7,
+          "median": 16,
+          "max": 21,
+          "over_32": 0
+        },
+        "coronal": {
+          "min": 8,
+          "median": 11,
+          "max": 14,
+          "over_32": 0
+        }
+      }
+    },
+    "test": {
+      "records": 261,
+      "unique_case_ids": 261,
+      "unique_study_uids": 261,
+      "unique_patient_groups": 243,
+      "repeated_patient_groups": 16,
+      "records_in_repeated_patient_groups": 34,
+      "missing_patient_group_ids": 0,
+      "module1_box_counts": {
+        "coronal:lateral:abnormal": 865,
+        "coronal:lateral:normal": 1490,
+        "coronal:medial:abnormal": 836,
+        "coronal:medial:normal": 2045,
+        "sagittal:lateral:abnormal": 952,
+        "sagittal:lateral:normal": 2390,
+        "sagittal:medial:abnormal": 849,
+        "sagittal:medial:normal": 2740
+      },
+      "module2_case_counts": {
+        "lateral:degeneration": 13,
+        "lateral:normal": 121,
+        "lateral:tear": 127,
+        "medial:degeneration": 23,
+        "medial:normal": 122,
+        "medial:tear": 116
+      },
+      "module3_case_counts": {
+        "lateral:0": 251,
+        "lateral:1": 10,
+        "medial:0": 249,
+        "medial:1": 12
+      },
+      "module4_case_counts": {
+        "lateral_discoid:0": 229,
+        "lateral_discoid:1": 32
+      },
+      "lesion_boxes": 3524,
+      "unmatched_lesion_boxes": 0,
+      "invalid_boxes": 0,
+      "logical_inconsistencies": {},
+      "series_depth": {
+        "sagittal": {
+          "min": 16,
+          "median": 21,
+          "max": 26,
+          "over_32": 0
+        },
+        "coronal": {
+          "min": 16,
+          "median": 20,
+          "max": 25,
+          "over_32": 0
+        }
+      },
+      "distinct_labeled_slice_count": {
+        "sagittal": {
+          "min": 6,
+          "median": 16,
+          "max": 21,
+          "over_32": 0
+        },
+        "coronal": {
+          "min": 7,
+          "median": 11,
+          "max": 15,
+          "over_32": 0
+        }
+      }
+    }
+  },
+  "patient_group_overlap": {
+    "train__val": 0,
+    "train__test": 0,
+    "val__test": 0
+  },
+  "source_availability": {
+    "annotation_files": 3859,
+    "valid_annotation_studies": 3858,
+    "invalid_annotation_files": 1,
+    "indexed_studies": 1736,
+    "annotations_without_usable_index_record": 2122,
+    "coverage_fraction": 0.4499740798341109,
+    "invalid_examples": [
+      "../data/json/10299/1.2.840.113619.186.20031102220149212.20190712143913841.666.json"
+    ],
+    "missing_study_examples": [
+      "1.2.156.112605.189250940724637.20180402132356.2.7344.1",
+      "1.2.156.112605.189250940724637.20180727124345.2.7572.1",
+      "1.2.156.112605.189250940724637.20180817100130.2.8104.1",
+      "1.2.194.0.108707908.20200306000007.1460.12100.20863766",
+      "1.2.194.0.108707908.20200421115730.1960.12100.20989248",
+      "1.2.194.0.108707908.20200621000020.1100.12100.21173003",
+      "1.2.194.0.108707908.20200702000009.183.12100.21200805",
+      "1.2.194.0.108707908.20200712000015.1120.12100.21242831",
+      "1.2.194.0.108707908.20200722000005.1783.12100.21275129",
+      "1.2.194.0.108707908.20200731000032.1877.12100.21303045",
+      "1.2.194.0.108707908.20200801000012.1267.12100.21305433",
+      "1.2.194.0.108707908.20200801000012.1300.12100.21305458",
+      "1.2.194.0.108707908.20200822000017.1610.12100.21399416",
+      "1.2.194.0.108707908.20200823000000.1873.12100.21378916",
+      "1.2.194.0.108707908.20200823000011.1980.12100.21409783",
+      "1.2.194.0.108707908.20200828000014.1987.12100.21394219",
+      "1.2.194.0.108707908.20200831000042.1580.12100.21405804",
+      "1.2.194.0.108707908.20200903000009.1560.12100.21417756",
+      "1.2.194.0.108707908.20200904094413.1150.12100.21458644",
+      "1.2.194.0.108707908.20200907074319.1177.12100.21466479"
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+# Paper-aligned Module 2: one standard 27.8M Video Swin-T after channel-wise
+# sagittal/coronal fusion. T=32 and 224px ROI crops are implementation choices
+# because the manuscript only specifies the complete ROI sequence.
+module: module2_video_swin
+seed: 42
+device: cuda
+
+data:
+  train_rois: rois/paper_reproduction_full/train/index.jsonl
+  val_rois: rois/paper_reproduction_full/val/index.jsonl
+  roi_shape: [32, 224, 224]
+  classes: [normal, degeneration, tear]
+  sides: [medial, lateral]
+  num_workers: 8
+  persistent_workers: true
+  prefetch_factor: 2
+  oversampling: true
+  train_augmentation: true
+  train_augmentation_params:
+    probability: 0.5
+    max_rotation_degrees: 30.0
+    max_brightness_shift: 0.2
+    noise_sigma: 0.02
+
+model:
+  implementation: paper_swin_t
+  num_classes: 3
+  pretrained: true
+  pretrained_checkpoint: pretrained/swin3d_t-7615ae03.pth
+  normalize_input: true
+  fusion_mode: input_channel_concat
+  dropout: 0.1
+
+loss:
+  type: focal
+  class_weights: null
+  focal_gamma: 2.0
+
+train:
+  epochs: 40
+  batch_size: 8
+  grad_accum_steps: 2
+  amp: true
+  optimizer: AdamW
+  lr: 0.0001
+  weight_decay: 0.05
+  betas: [0.9, 0.999]
+  scheduler: cosine
+  warmup_epochs: 2
+  output_dir: checkpoints/paper_reproduction_full/module2
+  resume: null
+  # Preserve minority degeneration performance instead of selecting the
+  # majority-favoring global-accuracy peak.
+  save_best_metric: macro_f1
+  log_interval: 10
+
+validate:
+  batch_size: 8
+  bootstrap_samples: 1000

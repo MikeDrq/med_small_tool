@@ -1,0 +1,13 @@
+{
+  "input_jsonl": "data/paper_reproduction_full/index_all.jsonl",
+  "output_dir": "data/paper_reproduction_full",
+  "seed": 42,
+  "group_key": "patient_group_id",
+  "stratified": true,
+  "counts": {
+    "train": 3678,
+    "val": 788,
+    "test": 789
+  },
+  "total": 5255
+}
