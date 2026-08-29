@@ -31,7 +31,7 @@
 | Module 3 参数量/训练 | 27.8M / 25 epochs | 27.85M / 25 epochs，`8×grad_accum 2` |
 | 优化器 | AdamW, lr 1e-4, warmup 2, cosine | 一致 |
 | weight decay | Module 1: .005；Module 2/3: .05 | 一致 |
-| Module 4 | `beta=w2/w1 > .4` | 规则一致；`w1` 由 `seg/` 冠状位 U2Net 自动生成 |
+| Module 4 | `beta=w2/w1 > .4` | 保持宽度比定义；最终操作点为验证集选择的 `q25_beta / 0.90 / 0.2772`，并单独报告论文阈值 `.4` |
 
 仍不能从论文中唯一确定、因而没有伪装成“完全一致”的部分：
 
@@ -40,9 +40,9 @@
 - Module 2 正文描述为“两平面分别池化后拼接特征”，Figure 10 却画成“两平面 channel concatenate 后进入一个 Video Swin”。当前按 Figure 10 和 27.8M 参数量实现，并补了第三个均值通道以加载标准三通道预训练权重。
 - 原文没有说明 Module 2/3 训练时使用 GT ROI 还是 Module 1 预测 ROI。当前训练使用 GT ROI、验证/测试使用预测 ROI，因此存在论文无法核实的 train-test ROI domain gap。
 - 原文没有说明 bootstrap 单位、Module 1 detection specificity 的 TN 定义、PR-AUC 是 trapezoidal AUC 还是 average precision，也没有说明侧别/异常指标是在 GT-assigned token 还是匹配后的检测框上计算。当前实现分别采用患者分组 bootstrap、average precision 和 GT-assigned positive token；检测 specificity 不凭空构造。
-- Figure S1 中盘状半月板阈值图示疑似为 0.25，但 Methods 明确写 `beta>0.4`；当前以 Methods 的 0.4 为准。
+- Figure S1 中盘状半月板阈值图示疑似为 0.25，Methods 明确写 `beta>0.4`，实验部分又说明适用任务的阈值取验证集最大 F1 点。最终实现保留论文的宽度比定义，使用验证集锁定的 `0.2772` 作为操作阈值；`.4` 结果仅作为严格论文规则对照。
 
-论文训练集有 6,681 例，并使用三个独立测试集。当前目录有 3,859 个标注文件（3,858 个有效 study），但只有 **1,736** 个 study 同时有可读 sagittal/coronal DICOM；2,122 个有效标注没有可用的完整双平面影像，实际覆盖率为 **45.0%**。可用数据按患者分组划为 train/val/test = `1215/260/261`，患者组交集均为 0。当前也没有论文的三个独立外部测试集，因此不能把本地 split 指标直接等同于论文报告值。详细证据见 `data/paper_reproduction/audit_splits.json`。
+论文训练集有 6,681 例，并使用三个独立测试集。合并并去重后的 `data_full` 有 7,663 个标注文件、7,324 个有效 study，其中 **5,255** 个 study 同时具有可用的 sagittal/coronal DICOM，覆盖率为 **71.75%**。按 `patient_group_id` 分组划分后的 train/val/test 为 `3678/788/789`，患者组数为 `3517/753/755`，三个 split 的患者组交集均为 0。当前没有论文的三个独立外部测试集，因此本地 split 指标不能直接等同于论文报告值。详细证据见 `data/paper_reproduction_full/audit_splits.json`。
 
 ## 源标注映射
 
@@ -56,8 +56,9 @@
 本机已使用 `shine` 环境验证：PyTorch 2.5.1 + CUDA 12.4、torchvision 0.20.1、pydicom 3.0.2。
 
 ```bash
+source /root/miniconda3/etc/profile.d/conda.sh  # 当前集群；已初始化conda的终端可省略
 conda activate shine
-cd /mnt/aoss/dongruiqi/small_tool/meniscus_model
+cd /mnt/aoss/dongruiqi/small_tool/meniscus_model  # 克隆后替换为实际路径
 pip install -r requirements.txt
 ```
 
@@ -82,96 +83,114 @@ curl -L -o pretrained/swin3d_t-7615ae03.pth \
 
 ```bash
 python -m scripts.convert_labeled_dataset \
-  --dicom-root ../data/dicom/10299 \
-  --dicom-root ../data/json/10299 \
-  --annotation-root ../data/json/10299 \
-  --output-jsonl data/paper_reproduction/index_all.jsonl \
-  --report-json data/paper_reproduction/conversion_report.json \
+  --dicom-root ../data_full/dicom/10299 \
+  --dicom-root ../data_full/dicom/10312 \
+  --dicom-root ../data_full/dicom/10424 \
+  --dicom-root ../data_full/dicom/10593 \
+  --annotation-root ../data_full/json \
+  --output-jsonl data/paper_reproduction_full/index_all.jsonl \
+  --report-json data/paper_reproduction_full/conversion_report.json \
   --box-format center-wh \
   --bucket-handle-code t3 \
   --scan-workers 16
 
 python -m scripts.split_index \
-  --input-jsonl data/paper_reproduction/index_all.jsonl \
-  --output-dir data/paper_reproduction \
+  --input-jsonl data/paper_reproduction_full/index_all.jsonl \
+  --output-dir data/paper_reproduction_full \
   --group-key patient_group_id \
   --seed 42
 
 python -m scripts.audit_paper_dataset \
-  data/paper_reproduction/train.jsonl \
-  data/paper_reproduction/val.jsonl \
-  data/paper_reproduction/test.jsonl \
-  --annotation-root ../data/json/10299 \
-  --output data/paper_reproduction/audit_splits.json
+  data/paper_reproduction_full/train.jsonl \
+  data/paper_reproduction_full/val.jsonl \
+  data/paper_reproduction_full/test.jsonl \
+  --annotation-root ../data_full/json \
+  --output data/paper_reproduction_full/audit_splits.json
 ```
 
-当前审计结果：三个 split 的 `patient_group_overlap=0`、`invalid_boxes=0`、标签逻辑冲突为 0；23,041 个 lesion box 中只有 1 个无法与同 instance 的半月板框匹配。
+数据转换和划分只需运行一次。当前审计结果：三个 split 的 `patient_group_overlap=0`、`invalid_boxes=0`、标签逻辑冲突为 0；80,728 个 lesion box 中有 3 个无法与同 instance 的半月板框匹配。
 
 ## 训练与验证
 
 H100 论文尺寸冒烟测试：
 
 ```bash
-python scripts/smoke_paper_models.py --module1-backward --module1-batch-size 2
-python -m scripts.smoke_real_module1_step --config configs/module1_meniscovit_cop.yaml
+python scripts/smoke_paper_models.py \
+  --module1-config configs/module1_meniscovit_cop_full.yaml \
+  --module2-config configs/module2_swin_full.yaml \
+  --module1-backward --module1-batch-size 2
+python -m scripts.smoke_real_module1_step \
+  --config configs/module1_meniscovit_cop_full.yaml
 ```
 
 真实 DICOM 实测：Module 1 batch 2 的完整优化步骤为 1.92 秒、峰值 39.06 GiB，91/91 个原始框精确映射；修复后的初始 `loss_objectness=1.1311`，总损失有限。真实 ROI 的 Module 2 batch 8 完整反向为 0.70 秒、峰值 20.09 GiB。
 
 ### 当前完整训练结果
 
-Module 1 已完成 15 epochs，best 为 epoch 15。验证集阈值扫描按论文的 `IoU>0.45` 最大 F1 规则选择 `0.2`，得到 P/R/F1=`0.8556/0.8235/0.8392`；按 242 个患者组 bootstrap 1,000 次的 95% CI 分别为 `(0.8371,0.8727)`、`(0.8054,0.8426)`、`(0.8208,0.8566)`。原先 `0.05` 的 F1 仅为 `0.7749`。完整扫描保存在 `outputs/paper_reproduction/module1_threshold_sweep/`。
+Module 1 已完成 15 epochs，最终 `best.pt` 为 epoch 13，验证集 `IoU>0.45` detection F1=`0.8821`。验证和推理使用补充材料给出的 `score_threshold=0.2`。
 
-Module 2 已完成 40 epochs。现有按总体 accuracy 保存的 checkpoint 为 `0.7750`，但 degeneration F1 仅 `0.1778`；配置已改为按 `macro_f1` 保存后续重训的 best，避免多数类掩盖 degeneration。Module 3 已完成 25 epochs，best 为 epoch 6，overall ROC-AUC=`0.9262`、F1=`0.5714`。这些均为本地内部验证结果，不能与论文的独立测试集直接等同。
+Module 2 已完成 40 epochs，最终 `best.pt` 为 epoch 26，验证集 macro-F1=`0.7418`。Module 3 已完成 25 epochs，最终 `best.pt` 为 epoch 23，验证集 ROC-AUC=`0.9717`、F1=`0.8660`，checkpoint 内保存的操作阈值为 `0.19934`。这些均为本地内部验证结果，不能与论文的独立测试集直接等同。
 
-依次运行完整流程：
+`run.sh` 使用最终 `paper_reproduction_full` 配置，依次训练 Module 1、生成 train/val ROI、训练 Module 2 和 Module 3。它不会重新执行上面的数据转换，也不会训练外部 U2Net：
 
 ```bash
-bash scripts/train_all.sh
+bash -e run.sh
 ```
 
 或分步运行：
 
 ```bash
-python -m engine.train_module1 --config configs/module1_meniscovit_cop.yaml
+python -m engine.train_module1 --config configs/module1_meniscovit_cop_full.yaml
 
 python scripts/generate_rois.py \
-  --config configs/module1_meniscovit_cop.yaml \
-  --index data/paper_reproduction/train.jsonl \
-  --module1-checkpoint checkpoints/paper_reproduction/module1/best.pt \
-  --output-dir rois/paper_reproduction/train \
+  --config configs/module1_meniscovit_cop_full.yaml \
+  --index data/paper_reproduction_full/train.jsonl \
+  --module1-checkpoint checkpoints/paper_reproduction_full/module1/best.pt \
+  --output-dir rois/paper_reproduction_full/train \
   --use-gt-boxes true --slice-selection-usage uniform \
   --crop-size 224 --storage-dtype float16 \
-  --save-visualizations false
+  --save-visualizations false --num-workers 4
 
 python scripts/generate_rois.py \
-  --config configs/module1_meniscovit_cop.yaml \
-  --index data/paper_reproduction/val.jsonl \
-  --module1-checkpoint checkpoints/paper_reproduction/module1/best.pt \
-  --output-dir rois/paper_reproduction/val \
+  --config configs/module1_meniscovit_cop_full.yaml \
+  --index data/paper_reproduction_full/val.jsonl \
+  --module1-checkpoint checkpoints/paper_reproduction_full/module1/best.pt \
+  --output-dir rois/paper_reproduction_full/val \
   --use-gt-boxes false --slice-selection-usage val \
   --crop-size 224 --storage-dtype float16 \
-  --save-visualizations false
+  --save-visualizations false --num-workers 4
 
-python -m engine.train_module2 --config configs/module2_swin.yaml
-python -m engine.train_module3 --config configs/module3_bucket_swin.yaml
-bash scripts/validate_all.sh
+python -m engine.train_module2 --config configs/module2_swin_full.yaml
+python -m engine.train_module3 --config configs/module3_bucket_swin_full.yaml
 ```
 
-GT ROI 默认使用 uniform slice selection，避免旧的 label-chunk 模式用相同 `case_id.pt` 重复覆盖。ROI 以 float16 缓存，加载时恢复为 float32；裁剪已按整个 slice batch 向量化。本机挂载的 DICOM 存储在 DataLoader 多进程下会等待，因此默认可靠值是 `--num-workers 0`；本地 SSD 数据可显式提高该值。
+Module 1–3 的最终测试、测试集 ROI 生成及四模块端到端验证使用：
+
+```bash
+bash -e run_valid.sh
+```
+
+GT ROI 默认使用 uniform slice selection，避免旧的 label-chunk 模式用相同 `case_id.pt` 重复覆盖。ROI 以 float16 缓存，加载时恢复为 float32；裁剪已按整个 slice batch 向量化。`run.sh` 当前使用 `--num-workers 4`；若共享 DICOM 挂载出现长时间等待，可将其降为 `0` 排查。
 
 ## Module 4
 
-论文 Module 4 依赖先前研究的分割模型得到胫骨宽度 `w1`。当前数据没有 tibia mask，但同级 `seg/` 目录提供了三分类冠状位 U2Net 代码与权重（0=背景、1=股骨、2=胫骨）。当前实现按以下顺序取得 `w1`：
+论文 Module 4 依赖先前研究的分割模型得到胫骨宽度 `w1`。当前数据没有 tibia mask，同级 `seg/` 目录提供三分类冠状位 U2Net 代码（0=背景、1=股骨、2=胫骨）。权重被 Git 忽略，运行前必须确认下面两个路径都存在：
+
+```text
+../seg/src/model.py
+../seg/save_weights/model_cor_multiclass_2024424_best.pth
+```
+
+当前实现按以下顺序取得 `w1`：
 
 - 传入 `module4_labels.tibia_width`；
 - 传入 `.npy/.pt` tibia mask；
 - 自动运行 `seg/save_weights/model_cor_multiclass_2024424_best.pth` 并只测量类别 2；
 - 单病例推理仍可用 `--tibia-width` 显式覆盖自动分割。
 
-端到端运行 `engine.infer_pipeline` 时，Module 1 冠状位外侧半月板框给出 `w2`，U2Net 给出 `w1`，最终严格应用论文规则 `beta=w2/w1 > 0.4`。Figure 11 明确把 `w1`、`w2` 画在同一冠状位切片上，因此当前先保留 `w1` 不低于病例最大平台宽度 95% 的近中央层，默认再取其中最大的真实 `w2` 并同层计算 beta；这会排除只显示单侧髁、导致 `w1` 偏小的边缘层。95% 是原文未披露的工程选择。fallback/填充框不参与解剖测量，U2Net mask 每层只保留最大连通域。分割权重没有随附原训练集上的定量验证结果，所以其迁移可靠性仍需用少量人工 tibia mask 校验。
+端到端运行 `engine.infer_pipeline` 时，Module 1 冠状位外侧半月板框给出 `w2`，U2Net 给出 `w1`。Figure 11 明确把 `w1`、`w2` 画在同一冠状位切片上，因此实现只在同层计算 `beta=w2/w1`。最终验证集选择的规则为：保留 `w1` 不低于病例最大平台宽度 90% 的候选层，对候选层 beta 取最近的 25% 分位实际切片（`q25_beta`），并使用验证集最大 F1 操作阈值 `0.2772`。论文 Methods 的 `.4` 作为严格规则对照，不是当前默认操作点。fallback/填充框不参与解剖测量，U2Net mask 每层只保留最大连通域。
 
-病例级选层支持 `max_w2`、`max_w1`、`median_beta`、`q25_beta` 和 `central3_median`。默认仍为旧行为 `max_w2`。只能在验证集选择策略；测试集用于锁定规则后的最终一次评估。一次U2Net推理同时比较GT框和预测框：
+病例级选层支持 `max_w2`、`max_w1`、`median_beta`、`q25_beta` 和 `central3_median`。策略只能在验证集选择；测试集用于锁定规则后的最终一次评估。下面的命令一次 U2Net 推理同时比较 GT 框和预测框：
 
 ```bash
 python -m scripts.audit_module4_strategies \
@@ -185,7 +204,36 @@ python -m scripts.audit_module4_strategies \
   --bootstrap 0
 ```
 
-逐层宽度保存在 `per_slice_widths.jsonl`；修改策略后可通过 `--reuse-width-cache --width-cache ...` 跳过DICOM读取和U2Net，并把1000次bootstrap结果写入另一个目录。`selected_strategy.json` 按验证集预测框ROC-AUC给出候选策略。锁定后也可使用 `validate_module4 --aggregation-strategy ... --plateau-fraction ... --output-dir ... --bootstrap 1000` 计算最终CI。
+逐层宽度保存在 `per_slice_widths.jsonl`；修改策略后可通过 `--reuse-width-cache --width-cache ...` 跳过 DICOM 读取和 U2Net。最终配置已经写入 `configs/pipeline_full.yaml`，正式测试命令为：
+
+```bash
+python -m engine.validate_module4 \
+  --config configs/pipeline_full.yaml \
+  --index data/paper_reproduction_full/test.jsonl \
+  --roi-cache-dir rois/paper_reproduction_full/test \
+  --bootstrap 1000 \
+  --output-dir outputs/module4_best_test
+```
+
+该命令只运行 Module 4，复用 Module 1 生成的测试集 ROI。最终结果写入：
+
+```text
+outputs/module4_best_test/module4/metrics.json
+outputs/module4_best_test/module4/predictions.jsonl
+```
+
+四模块单病例端到端推理示例：
+
+```bash
+python -m engine.infer_pipeline \
+  --config configs/pipeline_full.yaml \
+  --case-id 413510 \
+  --sagittal-dicom-dir ../data_full/dicom/10299/413510/198478 \
+  --coronal-dicom-dir ../data_full/dicom/10299/413510/198475 \
+  --output-dir outputs/pipeline/413510
+```
+
+Module 4 当前使用既有 U2Net 权重进行推理；`seg/train.py` 尚未整理为该三分类冠状位权重的可复现训练入口，因此 `run.sh` 只训练 Module 1–3。
 
 ## 测试
 
@@ -193,4 +241,4 @@ python -m scripts.audit_module4_strategies \
 python -m pytest -q
 ```
 
-当前完整测试集：116 passed。主要入口见 `configs/`、`engine/`、`scripts/train_all.sh` 和 `scripts/validate_all.sh`。
+主要入口见 `configs/*_full.yaml`、`engine/`、`run.sh` 和 `run_valid.sh`。Module 1–3 的最终联合测试结果位于 `validation_outputs/paper_reproduction_full/test_set/`；Module 4 的最终结果位于 `outputs/module4_best_test/module4/`。

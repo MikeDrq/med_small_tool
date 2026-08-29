@@ -34,13 +34,14 @@ thresholds:
   # Fallback for legacy checkpoints; new Module3 checkpoints override this
   # with the F1-optimal validation threshold stored in their metadata.
   bucket_handle_score: 0.5
-  discoid_beta: 0.4
+  # Validation-selected operating threshold used by the final Module 4 test.
+  discoid_beta: 0.2772
 
 module4:
-  # Paper definition: beta = lateral meniscus width / tibia width; beta > .4.
-  # Figure 11 measures w1 and w2 on the same coronal slice.
+  # Final validation-selected operating point. The manuscript's explicit
+  # anatomical cutoff (0.4) is retained in the report for comparison.
   measurement_mode: paired_same_slice_near_max_plateau
-  threshold: 0.4
+  threshold: 0.2772
   probability_temperature: 0.05
   tibia_width_priority: [annotation, mask, unet]
   # End-to-end evaluation must never fall back to a ground-truth box.
@@ -48,10 +49,9 @@ module4:
   roi_cache_dir: null
   image_width: 512
   min_tibia_slice_pixels: 256
-  # Keep near-central slices with an almost fully visible tibial plateau.
-  min_plateau_width_fraction: 0.95
-  # Paper-inferred case-level aggregation; keep max_w2 until validation sweep.
-  beta_aggregation: max_w2
+  # Final validation-selected slice eligibility and case aggregation.
+  min_plateau_width_fraction: 0.90
+  beta_aggregation: q25_beta
   min_candidate_slices: 1
   central_window_radius: 1
   tibia_segmenter:
