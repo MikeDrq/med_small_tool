@@ -2,24 +2,6 @@
 
 本仓库复现当前目录中的论文与补充材料所描述的四模块半月板 MRI 流程。默认配置面向单张 H100 80GB，并明确区分“论文公开参数”和“因原文缺少代码而做的工程推断”。
 
-## 本次修复的核心问题
-
-旧结果差的首要原因不是单纯的调参，而是标签和模型契约错误：
-
-- 源标注 `t10.menicustype` 的 `t1/t2` 表示“损伤/变性”，旧转换器却将其当成“内/外侧”，造成 Module 2 标签系统性错位。
-- 病灶侧别现在通过同一 DICOM instance 上的 `t10` 病灶框与 `t9` 半月板框几何匹配恢复；不会再从 `menicustype` 猜侧别。
-- 旧代码把异常侧的所有切片都标为 abnormal；现在只标记病灶框实际重叠的半月板框，保留切片级异常定位监督。
-- 划分由 case 随机切分改为 `patient_group_id` 分组，避免同一患者的重复 MRI 泄漏到不同 split。
-- DICOM 强度预处理改为补充材料的 `WindowCenter ± WindowWidth/2` 截断公式，并保留缺失窗宽窗位时的 percentile fallback。
-- Module 1 从 `224/patch16/单尺度 8 层` 改为论文 Figure 8/9 的四阶段双平面 UniFormer：`512×512`、维度 `[64,128,320,512]`、深度 `[3,4,8,3]`、初始 `3×4×4 stride 2×4×4`、每阶段 RCPE 与 `k=32` cross-plane attention。
-- Module 1 bbox 的旧 `softplus` 偏移被错误地按整幅图解释，初始化时大量框直接贴边；现在按 feature-grid cell 单位解码。
-- 旧 objectness focal loss 被全部约 32K 个密集 token 直接平均，真实 batch 中正样本损失从 `1.13` 被稀释到 `0.0045`；现在按正样本数归一化（保留 `all_tokens` 兼容开关），恢复有效的定位梯度。
-- Module 2/3 从两个小型独立分支改为论文 Figure 10 的单个标准 Video Swin-T，参数量与论文一致，并使用本地 Kinetics-400 初始化。
-- 论文增强（随机翻转、±30°旋转、±0.2 亮度、σ=0.02 噪声）以每个 volume 一次 `p=0.5` 总开关接入；Module 1 的 bbox 和 DICOM 世界坐标网格会与空间变换同步更新。
-- Module 3 只在 ground-truth tear 半月板中训练和验证，匹配论文流程的条件分支，避免模型靠“正常 vs 撕裂”捷径虚高结果。
-- 原文只写了 bootstrap 1,000 次，并未说明重采样单位。当前采用更保守的 `patient_group_id` 整组抽样；同一患者的重复 MRI、双侧半月板和多个 token/框不会被拆开。Module 1 的 pooled token PR-AUC 保留点估计，其 CI 报告病例宏平均 PR-AUC，避免对数百万 token 伪重复抽样。
-- Module 1 的验证集 max-F1 扫描在论文规定的 `IoU>0.45` 下选出 `score_threshold=0.2`，与 Figure S1 一致；推理、ROI 生成和单模块验证共用同一 NMS/阈值。
-
 ## 与论文参数的对应
 
 | 模块 | 论文 | 当前默认实现 |
@@ -53,7 +35,7 @@
 
 ## 环境
 
-本机已使用 `shine` 环境验证：PyTorch 2.5.1 + CUDA 12.4、torchvision 0.20.1、pydicom 3.0.2。
+PyTorch 2.5.1 + CUDA 12.4、torchvision 0.20.1、pydicom 3.0.2。
 
 ```bash
 source /root/miniconda3/etc/profile.d/conda.sh  # 当前集群；已初始化conda的终端可省略
