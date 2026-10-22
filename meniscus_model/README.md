@@ -1,50 +1,19 @@
 # Meniscus MRI paper reproduction
 
-本仓库复现当前目录中的论文与补充材料所描述的四模块半月板 MRI 流程。默认配置面向单张 H100 80GB，并明确区分“论文公开参数”和“因原文缺少代码而做的工程推断”。
+本仓库复现当前目录中的论文与补充材料所描述的四模块半月板 MRI 流程。默认配置面向单张 H100 80GB。
 
-## 与论文参数的对应
-
-| 模块 | 论文 | 当前默认实现 |
-|---|---:|---:|
-| MeniscoViT-CoP 参数量 | 51.3M | 52.39M（含检测/质量头） |
-| Module 1 输入 | 全序列，512×512 | `T=32`，512×512；T 为未公开推断值 |
-| Module 1 训练 | 15 epochs，batch 8 | 15 epochs，`2×grad_accum 4` |
-| Module 2 参数量/训练 | 27.8M / 40 epochs | 27.85M / 40 epochs，`8×grad_accum 2` |
-| Module 3 参数量/训练 | 27.8M / 25 epochs | 27.85M / 25 epochs，`8×grad_accum 2` |
-| 优化器 | AdamW, lr 1e-4, warmup 2, cosine | 一致 |
-| weight decay | Module 1: .005；Module 2/3: .05 | 一致 |
-| Module 4 | `beta=w2/w1 > .4` | 保持宽度比定义；最终操作点为验证集选择的 `q25_beta / 0.90 / 0.2772`，并单独报告论文阈值 `.4` |
-
-仍不能从论文中唯一确定、因而没有伪装成“完全一致”的部分：
-
-- 论文没有公开固定序列长度、ROI 尺寸、预训练来源、检测 target/loss、NMS 或缺失切片 ROI 填充方法。当前的 `T=32`、ROI `224×224`、Kinetics-400 初始化、anchor-free target、bbox-quality head、`NMS=0.3` 和 nearest fill 都是工程选择。
-- Module 1 为控制 H100 上的显存和计算量，使用了 4,096-token cross-attention 上限和 factorized global attention；这两点未在原文出现，也使参数量从论文的 51.3M 变为 52.39M。
-- Module 2 正文描述为“两平面分别池化后拼接特征”，Figure 10 却画成“两平面 channel concatenate 后进入一个 Video Swin”。当前按 Figure 10 和 27.8M 参数量实现，并补了第三个均值通道以加载标准三通道预训练权重。
-- 原文没有说明 Module 2/3 训练时使用 GT ROI 还是 Module 1 预测 ROI。当前训练使用 GT ROI、验证/测试使用预测 ROI，因此存在论文无法核实的 train-test ROI domain gap。
-- 原文没有说明 bootstrap 单位、Module 1 detection specificity 的 TN 定义、PR-AUC 是 trapezoidal AUC 还是 average precision，也没有说明侧别/异常指标是在 GT-assigned token 还是匹配后的检测框上计算。当前实现分别采用患者分组 bootstrap、average precision 和 GT-assigned positive token；检测 specificity 不凭空构造。
-- Figure S1 中盘状半月板阈值图示疑似为 0.25，Methods 明确写 `beta>0.4`，实验部分又说明适用任务的阈值取验证集最大 F1 点。最终实现保留论文的宽度比定义，使用验证集锁定的 `0.2772` 作为操作阈值；`.4` 结果仅作为严格论文规则对照。
-
-论文训练集有 6,681 例，并使用三个独立测试集。合并并去重后的 `data_full` 有 7,663 个标注文件、7,324 个有效 study，其中 **5,255** 个 study 同时具有可用的 sagittal/coronal DICOM，覆盖率为 **71.75%**。按 `patient_group_id` 分组划分后的 train/val/test 为 `3678/788/789`，患者组数为 `3517/753/755`，三个 split 的患者组交集均为 0。当前没有论文的三个独立外部测试集，因此本地 split 指标不能直接等同于论文报告值。详细证据见 `data/paper_reproduction_full/audit_splits.json`。
+论文训练集有 6,681 例，并使用三个独立测试集。合并并去重后的 `data_full` 有 7,663 个标注文件、7,324 个有效 study，其中 **5,255** 个 study 同时具有可用的 sagittal/coronal DICOM，覆盖率为 **71.75%**。按 `patient_group_id` 分组划分后的 train/val/test 为 `3678/788/789`，患者组数为 `3517/753/755`，三个 split 的患者组交集均为 0。
 
 ## 源标注映射
 
 - `t9.position=t1/t2`：medial/lateral。
 - `t9.structure=t1`：discoid；`t2`：non-discoid。
 - `t10.menicustype=t1/t2`：tear/degeneration。
-- `t10.lesiontype.t3`：当前作为 bucket-handle。这个私有枚举未在论文中公开，转换报告会明确记录该假设，可用 `--bucket-handle-code` 修改。
+- `t10.lesiontype.t3`：作为 bucket-handle。
 
 ## 环境
 
 PyTorch 2.5.1 + CUDA 12.4、torchvision 0.20.1、pydicom 3.0.2。
-
-```bash
-source /root/miniconda3/etc/profile.d/conda.sh  # 当前集群；已初始化conda的终端可省略
-conda activate shine
-cd /mnt/aoss/dongruiqi/small_tool/meniscus_model  # 克隆后替换为实际路径
-pip install -r requirements.txt
-```
-
-官方 UniFormer-S 与 torchvision Video Swin-T 权重保存在被 git 忽略的 `pretrained/`：
 
 ```bash
 mkdir -p pretrained
@@ -93,17 +62,6 @@ python -m scripts.audit_paper_dataset \
 数据转换和划分只需运行一次。当前审计结果：三个 split 的 `patient_group_overlap=0`、`invalid_boxes=0`、标签逻辑冲突为 0；80,728 个 lesion box 中有 3 个无法与同 instance 的半月板框匹配。
 
 ## 训练与验证
-
-H100 论文尺寸冒烟测试：
-
-```bash
-python scripts/smoke_paper_models.py \
-  --module1-config configs/module1_meniscovit_cop_full.yaml \
-  --module2-config configs/module2_swin_full.yaml \
-  --module1-backward --module1-batch-size 2
-python -m scripts.smoke_real_module1_step \
-  --config configs/module1_meniscovit_cop_full.yaml
-```
 
 真实 DICOM 实测：Module 1 batch 2 的完整优化步骤为 1.92 秒、峰值 39.06 GiB，91/91 个原始框精确映射；修复后的初始 `loss_objectness=1.1311`，总损失有限。真实 ROI 的 Module 2 batch 8 完整反向为 0.70 秒、峰值 20.09 GiB。
 
